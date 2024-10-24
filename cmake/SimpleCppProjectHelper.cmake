@@ -110,3 +110,73 @@ function(simple_cpp_project_create_application target_name)
     )
 
 endfunction()
+
+
+function(simple_cpp_project_get_version_from_git version_variable_name_full version_variable_name_short)
+    # Check if we are in a git repository
+    execute_process(
+        COMMAND git rev-parse --is-inside-work-tree
+        RESULT_VARIABLE is_git_repo
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+
+    # If we're not in a git repository, return the default version "0.0.0"
+    if(NOT is_git_repo EQUAL 0)
+        set(${VERSION} "0.0.0" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Step 1: Detect if the repository is dirty
+    execute_process(
+        COMMAND git status --porcelain
+        OUTPUT_VARIABLE git_status_output
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Set dirty suffix if there are uncommitted changes
+    if(git_status_output)
+        set(dirty "-dirty")
+    else()
+        set(dirty "")
+    endif()
+
+    # Step 2: Get the most recent tag that matches semantic versioning (e.g., 0.0.0)
+    execute_process(
+        COMMAND git tag --list --sort=-v:refname "[0-9]*.[0-9]*.[0-9]*"
+        OUTPUT_VARIABLE tags
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Step 3: Check if the tag list is empty
+    if(tags STREQUAL "")
+        set(latest_tag "0.0.0")
+    else()
+        # Split the tags list and get the latest one
+        string(REPLACE "\n" ";" tag_list ${tags})
+        list(GET tag_list 0 latest_tag)
+    endif()
+
+    # Step 4: Get the description based on the latest matching tag
+    execute_process(
+        COMMAND git describe --tags --match ${latest_tag}
+        RESULT_VARIABLE describe_result
+        OUTPUT_VARIABLE describe_output
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    # Step 5: If no description is found, fallback to the tag
+    if(NOT describe_result EQUAL 0)
+        set(describe_output "${latest_tag}")
+    endif()
+
+    # Step 6: Append "-dirty" if there are uncommitted changes
+    set(version_short "${describe_output}")
+    set(version_full "${describe_output}${dirty}")
+
+    # Step 5: Return the version
+    set(${version_variable_name_short} ${version_short} PARENT_SCOPE)
+    set(${version_variable_name_full} ${version_full} PARENT_SCOPE)
+
+endfunction()
