@@ -121,25 +121,13 @@ function(simple_cpp_project_get_version_from_git version_variable_name_full vers
         ERROR_QUIET
     )
 
-    # If we're not in a git repository, return the default version "0.0.0"
-    if(NOT is_git_repo EQUAL 0)
-        set(${VERSION} "0.0.0" PARENT_SCOPE)
+    # Step 1: If we're not in a git repository, return the default version "0.0.0"
+    if(NOT is_git_repo EQUAL 0)        
+        set(${version_variable_name_short} 0.0.0 PARENT_SCOPE)
+        set(${version_variable_name_full} 0.0.0 PARENT_SCOPE)
         return()
     endif()
 
-    # Step 1: Detect if the repository is dirty
-    execute_process(
-        COMMAND git status --porcelain
-        OUTPUT_VARIABLE git_status_output
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    # Set dirty suffix if there are uncommitted changes
-    if(git_status_output)
-        set(dirty "-dirty")
-    else()
-        set(dirty "")
-    endif()
 
     # Step 2: Get the most recent tag that matches semantic versioning (e.g., 0.0.0)
     execute_process(
@@ -172,7 +160,7 @@ function(simple_cpp_project_get_version_from_git version_variable_name_full vers
     endif()
 
     # Step 6: Append "-dirty" if there are uncommitted changes
-    set(version_short "${describe_output}")
+    set(version_short "${latest_tag}")
     set(version_full "${describe_output}${dirty}")
 
     # Step 5: Return the version
