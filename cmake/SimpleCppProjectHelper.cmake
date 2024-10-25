@@ -128,7 +128,6 @@ function(simple_cpp_project_get_version_from_git version_variable_name_full vers
         return()
     endif()
 
-
     # Step 2: Get the most recent tag that matches semantic versioning (e.g., 0.0.0)
     execute_process(
         COMMAND git tag --list --sort=-v:refname "[0-9]*.[0-9]*.[0-9]*"
